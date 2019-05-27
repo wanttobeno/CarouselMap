@@ -80,7 +80,6 @@
     <ClInclude Include="AutoGdiPlus.h" />
     <ClInclude Include="CarouselMap.h" />
     <ClInclude Include="CarouselPic.h" />
-    <ClInclude Include="Easing.h" />
     <ClInclude Include="NagButtonUI.h" />
     <ClInclude Include="MyPainter.h" />
     <ClInclude Include="Resource.h" />

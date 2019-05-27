@@ -106,8 +106,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    // hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
    //   CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
 
-   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW , CW_USEDEFAULT, CW_USEDEFAULT,
-	   578, 300, NULL,NULL, hInstance, NULL);
+   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
+	   590, 300, NULL,NULL, hInstance, NULL);
 
    if (!hWnd)
    {
@@ -145,8 +145,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 #define  PIC_BIG_HEIGHT 183
 
 
-#define  ZY_TIME_NEXT_ID 1000
-#define  ZY_TIME_NEXT_LONG 1500
+#define  ZY_TIME_ANI_ID 1001
+#define  ZY_TIME_ANI_LONG 20
+
 
 #ifndef GET_X_LPARAM
 #define GET_X_LPARAM(lp)                        ((int)(short)LOWORD(lp))
@@ -157,118 +158,174 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 
 
-int gX = 0;
-int gY = 50;
-
-int gLeft1 = 98;
-int gLeft2 = 279;
-
 bool m_bMousing = false;
 
 CNagButtonUI g_pBtn1;
 CNagButtonUI g_pBtn2;
 
+
+bool g_bAnimat = false;
+int g_animatCount = 0;
+
+
+void OnLButtonUpMsg(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	m_bMousing = false;
+	// ◊Û∞¥≈•Œª÷√
+	RECT rtLeft = { 20, 90, 80, 150 };
+	// ”“∞¥≈•Œª÷√
+	RECT rtRight = { 520, 90, 555, 150 };
+	int x = GET_X_LPARAM(lParam);
+	int y = GET_Y_LPARAM(lParam);
+	POINT pt;
+	pt.x = x;
+	pt.y = y;
+	if (PtInRect(&rtLeft, pt))
+	{
+		g_bAnimat = true;
+		if (g_bAnimat)
+		{
+			CMyPainter* painter = CMyPainter::GetInst();
+			painter->SetRightMove();
+			::InvalidateRect(hWnd, NULL, true);
+			::UpdateWindow(hWnd);
+		}
+		g_animatCount = 0;
+		SetTimer(hWnd, ZY_TIME_ANI_ID, ZY_TIME_ANI_LONG, NULL);
+	}
+	else if (PtInRect(&rtRight, pt))
+	{
+		g_bAnimat = true;
+		if (g_bAnimat)
+		{
+			CMyPainter* painter = CMyPainter::GetInst();
+			painter->SetLeftMove();
+			::InvalidateRect(hWnd, NULL, true);
+			::UpdateWindow(hWnd);
+		}
+		g_animatCount = 0;
+		SetTimer(hWnd, ZY_TIME_ANI_ID, ZY_TIME_ANI_LONG, NULL);
+	}
+}
+
+void OnPaintMsg(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	PAINTSTRUCT ps;
+	HDC hdc;
+	hdc = BeginPaint(hWnd, &ps);
+	// TODO: Add any drawing code here...
+	HDC memdc = CreateCompatibleDC(hdc);
+	RECT rect;
+	::GetClientRect(hWnd, &rect);
+	HBITMAP  hBit = CreateCompatibleBitmap(hdc, rect.right, rect.bottom);
+	::SelectObject(memdc, hBit);
+
+	HBRUSH  brBack = (HBRUSH)CreateSolidBrush(ZY_BK_COLOR);
+	FillRect(memdc, &rect, brBack);
+
+
+	CMyPainter* pPainter = CMyPainter::GetInst();
+	pPainter->Painter(memdc);
+
+	Gdiplus::Graphics graphics(memdc);
+	graphics.SetSmoothingMode(Gdiplus::SmoothingMode::SmoothingModeAntiAlias);
+	// ◊Û∞¥≈•
+	{
+		Gdiplus::RectF bkRect(20, 90, 38, 38);
+		g_pBtn1.SetPos(bkRect);
+		g_pBtn1.Draw(graphics, true);
+	}
+	// ”“∞¥≈•
+	{
+		Gdiplus::RectF bkRect(520, 90, 38, 38);
+		g_pBtn2.SetPos(bkRect);
+		g_pBtn2.Draw(graphics, false);
+	}
+
+	BitBlt(hdc, 0, 0, rect.right - rect.left, rect.bottom - rect.top, memdc, 0, 0, SRCCOPY);
+	DeleteDC(memdc);
+	DeleteObject(brBack);
+	EndPaint(hWnd, &ps);
+}
+
+void OnMouseMoveMsg(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	int x = GET_X_LPARAM(lParam);
+	int y = GET_Y_LPARAM(lParam);
+	bool bRet1 = g_pBtn1.ChangeSate(x, y);
+	bool bRet2 = g_pBtn2.ChangeSate(x, y);
+	if (bRet1 || bRet2)
+	{
+		::InvalidateRect(hWnd, NULL, true);
+		::UpdateWindow(hWnd);
+	}
+}
+
+void OnLBtnDownMsg(HWND hWnd,WPARAM wParam,LPARAM lParam)
+{
+	int x = GET_X_LPARAM(lParam);
+	int y = GET_Y_LPARAM(lParam);
+	bool bRet1 = g_pBtn1.ChangeSate(x, y);
+	bool bRet2 = g_pBtn2.ChangeSate(x, y);
+	if (bRet1 || bRet2)
+	{
+		::InvalidateRect(hWnd, NULL, true);
+		::UpdateWindow(hWnd);
+	}
+}
+
+void OnCreateMsg(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	// º”‘ÿÕº∆¨
+	CMyPainter* pPainter = CMyPainter::GetInst();
+	wchar_t buf[MAX_PATH] = { 0 };
+	for (int i = 1; i < 6; i++)
+	{
+		wsprintf(buf, L"./Pic/%d.jpg", i);
+		CarouselPic* pPic1 = new CarouselPic;
+		pPic1->LoadPic(buf);
+
+		pPic1->SetLeft((i - 1) * 288);
+		pPainter->AddPic(pPic1);
+	}
+	pPainter->SelectPic(1);
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId, wmEvent;
-	PAINTSTRUCT ps;
-	HDC hdc;
+
 
 	switch (message)
 	{
 	case  WM_CREATE:
-	{
-					   // º”‘ÿÕº∆¨
-					   CMyPainter* pPainter = CMyPainter::GetInst();
-					   wchar_t buf[MAX_PATH] = { 0 };
-					   for (int i = 1; i < 6; i++)
-					   {
-						   wsprintf(buf, L"./Pic/%d.jpg", i);
-						   CarouselPic* pPic1 = new CarouselPic;
-						   pPic1->LoadPic(buf);
-				
-						   pPic1->SetLeft((i - 1) * 288);
-						   pPainter->AddPic(pPic1);
-					   }
-					   SetTimer(hWnd, ZY_TIME_NEXT_ID, ZY_TIME_NEXT_LONG, NULL);
-	}
+		OnCreateMsg(hWnd, wParam, lParam);
 		break;
 	case WM_TIMER:
 	{
 					 int nId = wParam;
-					 if (nId == ZY_TIME_NEXT_ID)
+					 if (nId == ZY_TIME_ANI_ID)
 					 {
-						 CMyPainter* painter = CMyPainter::GetInst();
-						 painter->MoveToLeft(288);
+						 if (g_bAnimat==false)
+						 {
+							 ::KillTimer(hWnd, ZY_TIME_ANI_ID);
+						 }
 						 ::InvalidateRect(hWnd, NULL, true);
 						 ::UpdateWindow(hWnd);
 					 }
 	}
 		break;
 	case  WM_MOUSEMOVE:
-	{
-						  int x = GET_X_LPARAM(lParam);
-						  int y = GET_Y_LPARAM(lParam);
-						  bool bRet1 = g_pBtn1.ChangeSate(x, y);
-						  bool bRet2 = g_pBtn2.ChangeSate(x, y);
-						  if (bRet1 || bRet2)
-						  {
-							  ::InvalidateRect(hWnd, NULL, true);
-							  ::UpdateWindow(hWnd);
-						  }
-	}
-	break;
+		OnMouseMoveMsg(hWnd,wParam,lParam);
+		break;
 	case WM_LBUTTONDOWN:
-	{
-						   int x = GET_X_LPARAM(lParam);
-						   int y = GET_Y_LPARAM(lParam);
-						   bool bRet1 = g_pBtn1.ChangeSate(x, y);
-						   bool bRet2 = g_pBtn2.ChangeSate(x, y);
-						   if (bRet1 || bRet2)
-						   {
-							   ::InvalidateRect(hWnd, NULL, true);
-							   ::UpdateWindow(hWnd);
-						   }
-						   return 0;
-	}
-	break;
+		OnLBtnDownMsg(hWnd, wParam, lParam);
+		break;
 	case WM_LBUTTONUP:
-	{
-						 m_bMousing = false;
-						 // ◊Û∞¥≈•Œª÷√
-						 RECT rtLeft = { 20, 90, 80, 150 };
-						 // ”“∞¥≈•Œª÷√
-						 RECT rtRight = { 480, 90, 540, 150 };
-						 int x = GET_X_LPARAM(lParam);
-						 int y = GET_Y_LPARAM(lParam);
-						 POINT pt;
-						 pt.x = x;
-						 pt.y = y;
-						 if (PtInRect(&rtLeft,pt))
-						 {
-							 CMyPainter* painter = CMyPainter::GetInst();
-							 painter->MoveToRight(288);
-							 ::InvalidateRect(hWnd, NULL, true);
-							 ::UpdateWindow(hWnd);
-						 }
-						 else if (PtInRect(&rtRight, pt))
-						 {
-							 CMyPainter* painter = CMyPainter::GetInst();
-							 painter->MoveToLeft(288); 
-							 ::InvalidateRect(hWnd, NULL, true);
-							 ::UpdateWindow(hWnd);
-						 }
-						 else
-						 {
-							 return 0;
-						 }
-	}
-	break;
+		OnLButtonUpMsg(hWnd, wParam, lParam);
+		break;
 	case WM_RBUTTONUP:
-	{
 		m_bMousing = false;
-
-	}
 		break;
 	case WM_COMMAND:
 		wmId    = LOWORD(wParam);
@@ -287,42 +344,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_PAINT:
-	{
-					 hdc = BeginPaint(hWnd, &ps);
-					 // TODO: Add any drawing code here...
-					 HDC memdc = CreateCompatibleDC(hdc);
-					 RECT rect;
-					 ::GetClientRect(hWnd, &rect);
-					 HBITMAP  hBit = CreateCompatibleBitmap(hdc, rect.right, rect.bottom);
-					 ::SelectObject(memdc, hBit);
-
-					 HBRUSH  brBack = (HBRUSH)CreateSolidBrush(ZY_BK_COLOR);
-					 FillRect(memdc, &rect, brBack);
-
-
-					 CMyPainter* pPainter = CMyPainter::GetInst();
-					 pPainter->Painter(memdc);
-
-					 Gdiplus::Graphics graphics(memdc);
-					 graphics.SetSmoothingMode(Gdiplus::SmoothingMode::SmoothingModeAntiAlias);
-					 // ◊Û∞¥≈•
-					 {
-						 Gdiplus::RectF bkRect(20, 90, 38, 38);
-						 g_pBtn1.SetPos(bkRect);
-						 g_pBtn1.Draw(graphics, true);
-					 }
-					 // ”“∞¥≈•
-					 {
-						 Gdiplus::RectF bkRect(500, 90, 38, 38);
-						 g_pBtn2.SetPos(bkRect);
-						 g_pBtn2.Draw(graphics, false);
-					 }
-
-			BitBlt(hdc, 0, 0, rect.right - rect.left, rect.bottom - rect.top, memdc, 0, 0, SRCCOPY);
-			DeleteDC(memdc);
-			DeleteObject(brBack);
-			EndPaint(hWnd, &ps);
-	}
+		OnPaintMsg(hWnd, wParam, lParam);
 		break;
 	case WM_ERASEBKGND:
 		return 1;

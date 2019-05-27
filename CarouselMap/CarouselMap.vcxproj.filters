@@ -39,9 +39,6 @@
     <ClInclude Include="AutoGdiPlus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Easing.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NagButtonUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
